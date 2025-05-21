@@ -1,4 +1,8 @@
 /**
+ * Version 1.1
+ */
+
+/**
  * BlueNova Bank Variance Assistant
  * Main JavaScript file for the SPA
  */
