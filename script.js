@@ -1,3 +1,5 @@
+// Version 1.1 - updated endpoint
+
 /**
  * BlueNova Bank Variance Assistant
  * Main JavaScript file for the SPA
