@@ -1,5 +1,3 @@
-// Version 1.1 - updated endpoint
-
 /**
  * BlueNova Bank Variance Assistant
  * Main JavaScript file for the SPA
@@ -133,7 +131,7 @@ function showPage(pageId) {
     
     // If showing the tool page, reset to first step
     if (pageId === 'toolPage') {
-      showToolStep(0);
+      goToStep(0);
     }
     
     // Scroll to top
