@@ -7,6 +7,38 @@
  * Main JavaScript file for the SPA
  */
 
+// Global state and functions - Define these first
+window.toolState = {
+  currentStep: 0,
+  segment: null,
+  kpis: new Set(),
+  mainDocuments: [],
+  additionalDocuments: [],
+  comments: '',
+  analysisResults: null
+};
+
+window.goToStep = function(stepIndex) {
+  if (stepIndex < 0 || stepIndex > 3) {
+    console.error('Invalid step index:', stepIndex);
+    return;
+  }
+  
+  console.log('Going to step:', stepIndex);
+  
+  const stepIndicators = document.querySelectorAll('.step[data-tool-step]');
+  stepIndicators.forEach((indicator, index) => {
+    indicator.classList.toggle('active', index === stepIndex);
+  });
+  
+  const formSteps = document.querySelectorAll('.form-step');
+  formSteps.forEach((step, index) => {
+    step.classList.toggle('active', index === stepIndex);
+  });
+  
+  window.toolState.currentStep = stepIndex;
+};
+
 document.addEventListener('DOMContentLoaded', function() {
   console.log('DOM fully loaded');
   
@@ -202,22 +234,6 @@ function initFaqItems() {
 function initToolFunctionality() {
   console.log('Initializing tool functionality');
   
-  // State management
-  const toolState = {
-    currentStep: 0,
-    segment: null,
-    kpis: new Set(),
-    mainDocuments: [],
-    additionalDocuments: [],
-    comments: '',
-    analysisResults: null
-  };
-
-  // Make the state and functions globally available
-  window.toolState = toolState;
-  window.goToStep = goToStep;
-  window.submitToBackend = submitToBackend;
-  
   // Initialize the UI
   initStepIndicators();
   initSegmentSelection();
@@ -237,7 +253,7 @@ function initToolFunctionality() {
       indicator.addEventListener('click', function() {
         const stepIndex = parseInt(this.getAttribute('data-tool-step'));
         // Only allow clicking on completed steps or the current step + 1
-        if (stepIndex <= toolState.currentStep + 1) {
+        if (stepIndex <= window.toolState.currentStep + 1) {
           goToStep(stepIndex);
         }
       });
@@ -256,7 +272,7 @@ function initToolFunctionality() {
       nextButton.disabled = true;
       
       nextButton.addEventListener('click', function() {
-        if (!toolState.segment) {
+        if (!window.toolState.segment) {
           validationMsg.textContent = 'Bitte wählen Sie ein Segment aus.';
           return;
         }
@@ -271,7 +287,7 @@ function initToolFunctionality() {
         
         // Select this option
         this.classList.add('selected');
-        toolState.segment = this.textContent;
+        window.toolState.segment = this.textContent;
         
         // Enable next button
         if (nextButton) {
@@ -283,7 +299,7 @@ function initToolFunctionality() {
           validationMsg.textContent = '';
         }
         
-        console.log('Selected segment:', toolState.segment);
+        console.log('Selected segment:', window.toolState.segment);
       });
     });
   }
@@ -301,7 +317,7 @@ function initToolFunctionality() {
       nextButton.disabled = true;
       
       nextButton.addEventListener('click', function() {
-        if (toolState.kpis.size === 0) {
+        if (window.toolState.kpis.size === 0) {
           validationMsg.textContent = 'Bitte wählen Sie mindestens eine KPI aus.';
           return;
         }
@@ -317,9 +333,9 @@ function initToolFunctionality() {
         this.classList.toggle('selected');
         
         if (this.classList.contains('selected')) {
-          toolState.kpis.add(kpiName);
+          window.toolState.kpis.add(kpiName);
         } else {
-          toolState.kpis.delete(kpiName);
+          window.toolState.kpis.delete(kpiName);
         }
         
         // Update counter
@@ -327,7 +343,7 @@ function initToolFunctionality() {
         
         // Enable/disable next button
         if (nextButton) {
-          nextButton.disabled = toolState.kpis.size === 0;
+          nextButton.disabled = window.toolState.kpis.size === 0;
         }
         
         // Clear validation message
@@ -335,14 +351,14 @@ function initToolFunctionality() {
           validationMsg.textContent = '';
         }
         
-        console.log('Selected KPIs:', Array.from(toolState.kpis));
+        console.log('Selected KPIs:', Array.from(window.toolState.kpis));
       });
     });
     
     function updateKpiCounter() {
       if (!kpiCounter) return;
       
-      const count = toolState.kpis.size;
+      const count = window.toolState.kpis.size;
       if (count === 0) {
         kpiCounter.textContent = '0 KPIs selected';
       } else if (count === 1) {
@@ -407,11 +423,11 @@ function initToolFunctionality() {
           }
         }
 
-        // Store uploaded filenames in toolState
+        // Store uploaded filenames in window.toolState
         if (dropzone.classList.contains('main-dropzone')) {
-          toolState.mainDocuments = uploadedFileNames;
+          window.toolState.mainDocuments = uploadedFileNames;
         } else {
-          toolState.additionalDocuments = uploadedFileNames;
+          window.toolState.additionalDocuments = uploadedFileNames;
         }
 
         // Update display
@@ -423,7 +439,7 @@ function initToolFunctionality() {
     const commentBox = document.querySelector('.comment-box');
     if (commentBox) {
       commentBox.addEventListener('input', function() {
-        toolState.comments = this.value;
+        window.toolState.comments = this.value;
       });
     }
   }
@@ -487,7 +503,7 @@ function initToolFunctionality() {
     const nextButtons = document.querySelectorAll('.next-step-button');
     nextButtons.forEach(button => {
       button.addEventListener('click', function() {
-        const currentStep = toolState.currentStep;
+        const currentStep = window.toolState.currentStep;
         if (currentStep === 2) {
           // If on step 3 (upload), submit to backend
           submitToBackend();
@@ -502,7 +518,7 @@ function initToolFunctionality() {
     const prevButtons = document.querySelectorAll('.prev-step-button');
     prevButtons.forEach(button => {
       button.addEventListener('click', function() {
-        goToStep(toolState.currentStep - 1);
+        goToStep(window.toolState.currentStep - 1);
       });
     });
     
@@ -513,34 +529,6 @@ function initToolFunctionality() {
       downloadDocxAnalysisResult();
     });
     }
-  }
-  
-  /**
-   * Navigate to a specific step
-   */
-  function goToStep(stepIndex) {
-    // Validate step index
-    if (stepIndex < 0 || stepIndex > 3) {
-      console.error('Invalid step index:', stepIndex);
-      return;
-    }
-    
-    console.log('Going to step:', stepIndex);
-    
-    // Update step indicators
-    const stepIndicators = document.querySelectorAll('.step[data-tool-step]');
-    stepIndicators.forEach((indicator, index) => {
-      indicator.classList.toggle('active', index === stepIndex);
-    });
-    
-    // Show the correct form step
-    const formSteps = document.querySelectorAll('.form-step');
-    formSteps.forEach((step, index) => {
-      step.classList.toggle('active', index === stepIndex);
-    });
-    
-    // Update current step
-    toolState.currentStep = stepIndex;
   }
   
   /**
@@ -560,11 +548,11 @@ function initToolFunctionality() {
   
   // Prepare payload
   const payload = {
-    segment: toolState.segment,
-    kpis: Array.from(toolState.kpis),
-    comments: toolState.comments,
-    mainDocuments: toolState.mainDocuments,
-    additionalDocuments: toolState.additionalDocuments
+    segment: window.toolState.segment,
+    kpis: Array.from(window.toolState.kpis),
+    comments: window.toolState.comments,
+    mainDocuments: window.toolState.mainDocuments,
+    additionalDocuments: window.toolState.additionalDocuments
   };
   
   console.log('Payload:', payload);
@@ -588,7 +576,7 @@ function initToolFunctionality() {
     
     if (data.success) {
       // Store results
-      toolState.analysisResults = data.result;
+      window.toolState.analysisResults = data.result;
       
       // Remove loading state
       removeLoadingState(step4);
@@ -1119,7 +1107,7 @@ function formatAnalysisText(text) {
    * Download analysis results
    */
   function downloadAnalysisResult() {
-    const results = toolState.analysisResults;
+    const results = window.toolState.analysisResults;
     if (!results) {
       console.log('No analysis results available');
       return;
@@ -1127,8 +1115,8 @@ function formatAnalysisText(text) {
     
     // Create content for download
     const content = `BlueNova Bank Variance Analysis Results
-Segment: ${toolState.segment || 'Not selected'}
-KPIs: ${Array.from(toolState.kpis).join(', ') || 'None selected'}
+Segment: ${window.toolState.segment || 'Not selected'}
+KPIs: ${Array.from(window.toolState.kpis).join(', ') || 'None selected'}
 Date: ${new Date().toLocaleDateString()}
 
 VARIANCE ANALYSIS:
@@ -1162,7 +1150,7 @@ async function downloadDocxAnalysisResult() {
       return;
     }
     
-    const results = toolState.analysisResults;
+    const results = window.toolState.analysisResults;
     if (!results) return;
 
     // Create document
@@ -1174,8 +1162,8 @@ async function downloadDocxAnalysisResult() {
             heading: window.docx.HeadingLevel.HEADING_1,
             spacing: { after: 300 }
           }),
-          new window.docx.Paragraph(`Segment: ${toolState.segment || 'Not selected'}`),
-          new window.docx.Paragraph(`KPIs: ${Array.from(toolState.kpis).join(', ') || 'None selected'}`),
+          new window.docx.Paragraph(`Segment: ${window.toolState.segment || 'Not selected'}`),
+          new window.docx.Paragraph(`KPIs: ${Array.from(window.toolState.kpis).join(', ') || 'None selected'}`),
           new window.docx.Paragraph(`Date: ${new Date().toLocaleDateString()}`),
           new window.docx.Paragraph({ text: '', spacing: { after: 200 } }),
         ]
