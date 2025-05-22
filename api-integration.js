@@ -4,7 +4,7 @@
  */
 
 // API endpoint configuration
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://finai-backend-g0pl.onrender.com/api';
 
 // Initialize the API integration
 document.addEventListener('DOMContentLoaded', function() {
