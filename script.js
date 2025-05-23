@@ -1,5 +1,5 @@
 /**
- * Version 1.2.
+ * Version 1.1
  */
 
 /**
@@ -407,7 +407,7 @@ function initToolFunctionality() {
           formData.append('file', file);
 
           try {
-            const response = await fetch("https://finai-backend-g0pl.onrender.com/api/upload", {
+            const response = await fetch("https://finai-backend-g0p1.onrender.com/api/upload", {
               method: 'POST',
               body: formData
             });
@@ -558,7 +558,7 @@ function initToolFunctionality() {
   console.log('Payload:', payload);
   
   // Comment this out for testing with mock data
-  fetch("https://finai-backend-g0pl.onrender.com/api/analyze", {
+  fetch("https://finai-backend-g0p1.onrender.com/api/analyze", {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
