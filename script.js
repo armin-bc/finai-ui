@@ -104,22 +104,51 @@ window.downloadDocxAnalysisResult = async function() {
       children.push(...trendParagraphs);
     }
 
-    // Try to add chart image
+// Replace this entire section in your function:
+// FROM: "// Try to add chart image"
+// TO: the end of the try block for image handling
+
+  // Try to add ALL chart images
+  const chartCanvases = [
+    { id: 'ifo-trend-chart', title: 'IFO Business Climate Index' },
+    { id: 'pmi-trend-chart', title: 'Purchasing Managers\' Index' }
+  ];
+
+  let chartsAdded = 0;
+
+  for (const chartInfo of chartCanvases) {
     try {
-      const canvas = document.getElementById('ifo-trend-chart') || document.getElementById('pmi-trend-chart');
+      const canvas = document.getElementById(chartInfo.id);
       if (canvas && typeof canvas.toDataURL === 'function') {
-        console.log('Adding chart to document...');
+        console.log(`Adding ${chartInfo.title} chart to document...`);
         
         const dataUrl = canvas.toDataURL('image/png', 0.8);
         const response = await fetch(dataUrl);
         const imageBlob = await response.blob();
         const imageBuffer = await imageBlob.arrayBuffer();
 
+        // Add spacing before first chart
+        if (chartsAdded === 0) {
+          children.push(
+            new window.docx.Paragraph({
+              text: 'Charts and Visualizations',
+              heading: window.docx.HeadingLevel.HEADING_2,
+              spacing: { before: 320, after: 160 }
+            })
+          );
+        }
+
+        // Add chart title
         children.push(
           new window.docx.Paragraph({
-            text: '',
-            spacing: { before: 240 }
-          }),
+            text: chartInfo.title,
+            heading: window.docx.HeadingLevel.HEADING_3,
+            spacing: { before: 240, after: 120 }
+          })
+        );
+
+        // Add chart image
+        children.push(
           new window.docx.Paragraph({
             children: [
               new window.docx.ImageRun({
@@ -130,18 +159,25 @@ window.downloadDocxAnalysisResult = async function() {
                 }
               })
             ],
-            alignment: window.docx.AlignmentType.CENTER
+            alignment: window.docx.AlignmentType.CENTER,
+            spacing: { after: 160 }
           })
         );
         
-        console.log('Chart added successfully');
+        chartsAdded++;
+        console.log(`${chartInfo.title} chart added successfully`);
       } else {
-        console.log('No chart canvas found or canvas.toDataURL not available');
+        console.log(`${chartInfo.title} canvas not found or not ready`);
       }
     } catch (imageError) {
-      console.warn('Failed to add chart image:', imageError);
-      // Continue without image - don't fail the entire export
+      console.warn(`Failed to add ${chartInfo.title} chart:`, imageError);
+      // Continue with next chart - don't fail the entire export
     }
+  }
+
+  if (chartsAdded === 0) {
+    console.log('No charts were found to add to the document');
+  }
 
     // Create document with correct v7 API
     const doc = new window.docx.Document({
