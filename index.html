@@ -494,12 +494,16 @@
       });
     });
   </script>
+
   <!-- Load regular script -->
-  <script src="https://unpkg.com/docx@8.3.1/build/index.umd.js"></script>
   <script>
-  window.docx = docx;
+    const docxScript = document.createElement('script');
+    docxScript.src = "https://unpkg.com/docx@8.3.1/build/index.umd.js";
+    docxScript.onload = () => {
+      window.docx = docx;
+    };
+    document.head.appendChild(docxScript);
   </script>
-  <script src="script.js"></script>
   <script src="api-integration.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 </body>
