@@ -1,5 +1,5 @@
 /**
- * Version 1.1
+ * Version 1.2
  */
 
 /**
@@ -73,7 +73,7 @@ window.downloadDocxAnalysisResult = async function() {
     // Create document content array
     const children = [];
 
-    // Document Header - Reduced by one step
+    // Document Header - Single line spacing
     children.push(
       new window.docx.Paragraph({
         children: [
@@ -85,7 +85,11 @@ window.downloadDocxAnalysisResult = async function() {
             color: '2563EB'
           })
         ],
-        spacing: { after: 120 },
+        spacing: { 
+          after: 120,
+          line: 240, // Single line spacing
+          lineRule: window.docx.LineRuleType.AUTO
+        },
         alignment: window.docx.AlignmentType.CENTER
       }),
       new window.docx.Paragraph({
@@ -98,7 +102,11 @@ window.downloadDocxAnalysisResult = async function() {
             color: '374151'
           })
         ],
-        spacing: { after: 480 },
+        spacing: { 
+          after: 360,  // Reduced spacing after subtitle
+          line: 240,   // Single line spacing
+          lineRule: window.docx.LineRuleType.AUTO
+        },
         alignment: window.docx.AlignmentType.CENTER
       })
     );
@@ -140,7 +148,7 @@ window.downloadDocxAnalysisResult = async function() {
                   })
                 ],
                 shading: { fill: 'F3F4F6' },
-                width: { size: 35, type: window.docx.WidthType.PERCENTAGE },
+                width: { size: 40, type: window.docx.WidthType.PERCENTAGE },
                 margins: { top: 100, bottom: 100, left: 200, right: 200 }
               }),
               new window.docx.TableCell({
@@ -154,7 +162,7 @@ window.downloadDocxAnalysisResult = async function() {
                     ]
                   })
                 ],
-                width: { size: 65, type: window.docx.WidthType.PERCENTAGE },
+                width: { size: 60, type: window.docx.WidthType.PERCENTAGE },
                 margins: { top: 100, bottom: 100, left: 200, right: 200 }
               })
             ],
@@ -167,7 +175,7 @@ window.downloadDocxAnalysisResult = async function() {
                   new window.docx.Paragraph({
                     children: [
                       new window.docx.TextRun({
-                        text: 'KPIs',
+                        text: 'Key Performance Indicators',
                         bold: true,
                         size: 20
                       })
@@ -175,7 +183,7 @@ window.downloadDocxAnalysisResult = async function() {
                   })
                 ],
                 shading: { fill: 'F3F4F6' },
-                width: { size: 35, type: window.docx.WidthType.PERCENTAGE },
+                width: { size: 40, type: window.docx.WidthType.PERCENTAGE },
                 margins: { top: 100, bottom: 100, left: 200, right: 200 }
               }),
               new window.docx.TableCell({
@@ -189,7 +197,7 @@ window.downloadDocxAnalysisResult = async function() {
                     ]
                   })
                 ],
-                width: { size: 65, type: window.docx.WidthType.PERCENTAGE },
+                width: { size: 60, type: window.docx.WidthType.PERCENTAGE },
                 margins: { top: 100, bottom: 100, left: 200, right: 200 }
               })
             ],
@@ -210,7 +218,7 @@ window.downloadDocxAnalysisResult = async function() {
                   })
                 ],
                 shading: { fill: 'F3F4F6' },
-                width: { size: 35, type: window.docx.WidthType.PERCENTAGE },
+                width: { size: 40, type: window.docx.WidthType.PERCENTAGE },
                 margins: { top: 100, bottom: 100, left: 200, right: 200 }
               }),
               new window.docx.TableCell({
@@ -224,7 +232,7 @@ window.downloadDocxAnalysisResult = async function() {
                     ]
                   })
                 ],
-                width: { size: 65, type: window.docx.WidthType.PERCENTAGE },
+                width: { size: 60, type: window.docx.WidthType.PERCENTAGE },
                 margins: { top: 100, bottom: 100, left: 200, right: 200 }
               })
             ],
@@ -232,7 +240,7 @@ window.downloadDocxAnalysisResult = async function() {
           })
         ],
         width: {
-          size: 75,
+          size: 85,
           type: window.docx.WidthType.PERCENTAGE
         }
       }),
@@ -310,7 +318,7 @@ window.downloadDocxAnalysisResult = async function() {
           const imageBlob = await response.blob();
           const imageBuffer = await imageBlob.arrayBuffer();
 
-          // Add chart image - optimal size for clarity
+          // Add chart image - optimal size with more spacing
           children.push(
             new window.docx.Paragraph({
               children: [
@@ -323,7 +331,7 @@ window.downloadDocxAnalysisResult = async function() {
                 })
               ],
               alignment: window.docx.AlignmentType.CENTER,
-              spacing: { before: 120, after: 300 }
+              spacing: { before: 120, after: 480 } // Increased spacing after charts
             })
           );
           
@@ -337,7 +345,7 @@ window.downloadDocxAnalysisResult = async function() {
       }
     }
 
-    // Disclaimer - Fixed formatting
+    // Disclaimer - Keep together, no page breaks
     if (chartsAdded > 0 || results.variance_analysis?.content || trendContent) {
       children.push(
         new window.docx.Paragraph({
@@ -358,7 +366,9 @@ window.downloadDocxAnalysisResult = async function() {
             })
           ],
           spacing: { after: 200, line: 300 },
-          alignment: window.docx.AlignmentType.JUSTIFIED
+          alignment: window.docx.AlignmentType.JUSTIFIED,
+          keepWithNext: true, // Keep disclaimer together
+          keepLines: true     // Prevent breaking within disclaimer
         })
       );
     }
