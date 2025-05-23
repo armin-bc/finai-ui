@@ -73,14 +73,14 @@ window.downloadDocxAnalysisResult = async function() {
     // Create document content array
     const children = [];
 
-    // Document Header - Properly sized
+    // Document Header - Reduced by one step
     children.push(
       new window.docx.Paragraph({
         children: [
           new window.docx.TextRun({
             text: 'BlueNova Bank',
             font: 'Calibri',
-            size: 48, // 24pt - reasonable size
+            size: 40, // 20pt - reduced from 24pt
             bold: true,
             color: '2563EB'
           })
@@ -93,7 +93,7 @@ window.downloadDocxAnalysisResult = async function() {
           new window.docx.TextRun({
             text: 'Variance Analysis Report',
             font: 'Calibri',
-            size: 36, // 18pt - smaller subtitle
+            size: 30, // 15pt - reduced from 18pt
             bold: true,
             color: '374151'
           })
@@ -167,7 +167,7 @@ window.downloadDocxAnalysisResult = async function() {
                   new window.docx.Paragraph({
                     children: [
                       new window.docx.TextRun({
-                        text: 'Key Performance Indicators',
+                        text: 'KPIs',
                         bold: true,
                         size: 20
                       })
@@ -253,14 +253,15 @@ window.downloadDocxAnalysisResult = async function() {
       children.push(...varianceParagraphs);
     }
 
-    // Trend Analysis Section
+    // Trend Analysis Section - Always start on new page
     const trendContent = results.trend_analysis?.summary || results.trend_analysis?.content;
     if (trendContent) {
       children.push(
         new window.docx.Paragraph({
           text: 'Trend Analysis',
           heading: window.docx.HeadingLevel.HEADING_1,
-          spacing: { before: 480, after: 240 }
+          spacing: { before: 480, after: 240 },
+          pageBreakBefore: true // Force new page
         })
       );
       
