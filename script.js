@@ -8,23 +8,27 @@
  */
 
 /**
- * Fixed DOCX Generation Function
- * - Correct docx@7 API usage
- * - Proper error handling
- * - Global scope accessibility
+ * Professional DOCX Generation Function
+ * Optimized for spacing, formatting, and professionalism
  */
 window.downloadDocxAnalysisResult = async function() {
-  console.log('Starting DOCX generation...');
+  console.log('Starting professional DOCX generation...');
   
   try {
-    // Check if docx library is loaded
+    // Wait for DOCX library if it's still loading
+    let waitAttempts = 0;
+    while (typeof window.docx === 'undefined' && waitAttempts < 20) {
+      console.log('Waiting for DOCX library...', waitAttempts);
+      await new Promise(resolve => setTimeout(resolve, 250));
+      waitAttempts++;
+    }
+    
     if (typeof window.docx === 'undefined') {
-      console.error('DOCX library not loaded');
-      alert('Document generation library not ready. Please refresh the page and try again.');
+      console.error('DOCX library not loaded after waiting');
+      alert('Document generation library failed to load. Please refresh the page and try again.');
       return;
     }
 
-    // Check if analysis results exist
     const results = window.toolState?.analysisResults;
     if (!results) {
       console.error('No analysis results available');
@@ -34,45 +38,126 @@ window.downloadDocxAnalysisResult = async function() {
 
     console.log('Analysis results found:', results);
 
-    // Helper function to create paragraphs from text
-    function createParagraphsFromText(text) {
+    // Helper function to create properly formatted paragraphs
+    function createFormattedParagraphs(text, isFirstParagraph = false) {
       if (!text) return [];
       
       return text
-        .split(/\r?\n/)
-        .filter(line => line.trim() !== '')
-        .map(line => new window.docx.Paragraph({
-          text: line,
-          spacing: { after: 120 }
-        }));
+        .split(/\n\s*\n/) // Split on double line breaks for paragraphs
+        .filter(paragraph => paragraph.trim() !== '')
+        .map((paragraph, index) => {
+          // Clean up the paragraph text
+          const cleanText = paragraph
+            .replace(/\n/g, ' ') // Replace single line breaks with spaces
+            .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+            .trim();
+          
+          return new window.docx.Paragraph({
+            text: cleanText,
+            spacing: {
+              before: (isFirstParagraph && index === 0) ? 0 : 200, // No space before first paragraph
+              after: 200,
+              line: 360, // 1.5 line spacing (240 = single, 360 = 1.5)
+              lineRule: window.docx.LineRuleType.AUTO
+            },
+            alignment: window.docx.AlignmentType.JUSTIFIED
+          });
+        });
     }
 
     // Create document content array
     const children = [];
 
-    // Title
+    // Document Header with Logo Space
     children.push(
+      // Title with better styling
       new window.docx.Paragraph({
-        text: 'BlueNova Bank – Variance Analysis Report',
-        heading: window.docx.HeadingLevel.HEADING_1,
-        spacing: { after: 400 }
+        text: 'BlueNova Bank',
+        spacing: { after: 120 },
+        alignment: window.docx.AlignmentType.CENTER,
+        run: {
+          font: 'Calibri',
+          size: 32,
+          bold: true,
+          color: '2563EB' // Blue color
+        }
+      }),
+      new window.docx.Paragraph({
+        text: 'Variance Analysis Report',
+        spacing: { after: 480 }, // More space after subtitle
+        alignment: window.docx.AlignmentType.CENTER,
+        run: {
+          font: 'Calibri',
+          size: 24,
+          color: '374151' // Dark gray
+        }
       })
     );
 
-    // Metadata
+    // Executive Summary Box
+    const currentDate = new Date();
+    const formattedDate = currentDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
     children.push(
       new window.docx.Paragraph({
-        text: `Segment: ${window.toolState?.segment || 'Not selected'}`,
-        spacing: { after: 120 }
+        text: 'Executive Summary',
+        heading: window.docx.HeadingLevel.HEADING_2,
+        spacing: { before: 240, after: 200 }
       }),
-      new window.docx.Paragraph({
-        text: `KPIs: ${window.toolState?.kpis ? Array.from(window.toolState.kpis).join(', ') : 'None selected'}`,
-        spacing: { after: 120 }
+      new window.docx.Table({
+        rows: [
+          new window.docx.TableRow({
+            children: [
+              new window.docx.TableCell({
+                children: [new window.docx.Paragraph({ text: 'Business Segment', run: { bold: true } })],
+                shading: { fill: 'F3F4F6' }
+              }),
+              new window.docx.TableCell({
+                children: [new window.docx.Paragraph({ text: window.toolState?.segment || 'Not selected' })]
+              })
+            ]
+          }),
+          new window.docx.TableRow({
+            children: [
+              new window.docx.TableCell({
+                children: [new window.docx.Paragraph({ text: 'Key Performance Indicators', run: { bold: true } })],
+                shading: { fill: 'F3F4F6' }
+              }),
+              new window.docx.TableCell({
+                children: [new window.docx.Paragraph({ 
+                  text: window.toolState?.kpis ? Array.from(window.toolState.kpis).join(', ') : 'None selected' 
+                })]
+              })
+            ]
+          }),
+          new window.docx.TableRow({
+            children: [
+              new window.docx.TableCell({
+                children: [new window.docx.Paragraph({ text: 'Analysis Date', run: { bold: true } })],
+                shading: { fill: 'F3F4F6' }
+              }),
+              new window.docx.TableCell({
+                children: [new window.docx.Paragraph({ text: formattedDate })]
+              })
+            ]
+          })
+        ],
+        width: {
+          size: 100,
+          type: window.docx.WidthType.PERCENTAGE
+        },
+        margins: {
+          top: 200,
+          bottom: 200,
+          left: 200,
+          right: 200
+        }
       }),
-      new window.docx.Paragraph({
-        text: `Date: ${new Date().toLocaleDateString()}`,
-        spacing: { after: 240 }
-      })
+      new window.docx.Paragraph({ text: '', spacing: { after: 400 } }) // Space after table
     );
 
     // Variance Analysis Section
@@ -80,12 +165,13 @@ window.downloadDocxAnalysisResult = async function() {
       children.push(
         new window.docx.Paragraph({
           text: 'Variance Analysis',
-          heading: window.docx.HeadingLevel.HEADING_2,
-          spacing: { before: 240, after: 120 }
+          heading: window.docx.HeadingLevel.HEADING_1,
+          spacing: { before: 480, after: 240 },
+          pageBreakBefore: false
         })
       );
       
-      const varianceParagraphs = createParagraphsFromText(results.variance_analysis.content);
+      const varianceParagraphs = createFormattedParagraphs(results.variance_analysis.content, true);
       children.push(...varianceParagraphs);
     }
 
@@ -95,118 +181,202 @@ window.downloadDocxAnalysisResult = async function() {
       children.push(
         new window.docx.Paragraph({
           text: 'Trend Analysis',
-          heading: window.docx.HeadingLevel.HEADING_2,
-          spacing: { before: 240, after: 120 }
+          heading: window.docx.HeadingLevel.HEADING_1,
+          spacing: { before: 480, after: 240 }
         })
       );
       
-      const trendParagraphs = createParagraphsFromText(trendContent);
+      const trendParagraphs = createFormattedParagraphs(trendContent, true);
       children.push(...trendParagraphs);
     }
 
-// Replace this entire section in your function:
-// FROM: "// Try to add chart image"
-// TO: the end of the try block for image handling
+    // Charts Section with Professional Formatting
+    const chartCanvases = [
+      { id: 'ifo-trend-chart', title: 'IFO Business Climate Index' },
+      { id: 'pmi-trend-chart', title: 'Purchasing Managers\' Index' }
+    ];
 
-  // Try to add ALL chart images
-  const chartCanvases = [
-    { id: 'ifo-trend-chart', title: 'IFO Business Climate Index' },
-    { id: 'pmi-trend-chart', title: 'Purchasing Managers\' Index' }
-  ];
+    let chartsAdded = 0;
 
-  let chartsAdded = 0;
+    for (const chartInfo of chartCanvases) {
+      try {
+        const canvas = document.getElementById(chartInfo.id);
+        if (canvas && typeof canvas.toDataURL === 'function') {
+          console.log(`Adding ${chartInfo.title} chart to document...`);
+          
+          // Add section header only before first chart
+          if (chartsAdded === 0) {
+            children.push(
+              new window.docx.Paragraph({
+                text: 'Supporting Charts and Visualizations',
+                heading: window.docx.HeadingLevel.HEADING_1,
+                spacing: { before: 480, after: 300 }
+              })
+            );
+          }
 
-  for (const chartInfo of chartCanvases) {
-    try {
-      const canvas = document.getElementById(chartInfo.id);
-      if (canvas && typeof canvas.toDataURL === 'function') {
-        console.log(`Adding ${chartInfo.title} chart to document...`);
-        
-        const dataUrl = canvas.toDataURL('image/png', 0.8);
-        const response = await fetch(dataUrl);
-        const imageBlob = await response.blob();
-        const imageBuffer = await imageBlob.arrayBuffer();
-
-        // Add spacing before first chart
-        if (chartsAdded === 0) {
+          // Add chart title with professional styling
           children.push(
             new window.docx.Paragraph({
-              text: 'Charts and Visualizations',
+              text: `Figure ${chartsAdded + 1}: ${chartInfo.title}`,
               heading: window.docx.HeadingLevel.HEADING_2,
-              spacing: { before: 320, after: 160 }
+              spacing: { before: 360, after: 120 },
+              alignment: window.docx.AlignmentType.LEFT
             })
           );
+
+          // Generate high-quality chart image
+          const dataUrl = canvas.toDataURL('image/png', 1.0); // Higher quality
+          const response = await fetch(dataUrl);
+          const imageBlob = await response.blob();
+          const imageBuffer = await imageBlob.arrayBuffer();
+
+          // Add chart image with professional sizing
+          children.push(
+            new window.docx.Paragraph({
+              children: [
+                new window.docx.ImageRun({
+                  data: imageBuffer,
+                  transformation: {
+                    width: 540, // Larger, more professional size
+                    height: 320
+                  }
+                })
+              ],
+              alignment: window.docx.AlignmentType.CENTER,
+              spacing: { before: 120, after: 300 }
+            })
+          );
+          
+          chartsAdded++;
+          console.log(`${chartInfo.title} chart added successfully`);
+        } else {
+          console.log(`${chartInfo.title} canvas not found or not ready`);
         }
-
-        // Add chart title
-        children.push(
-          new window.docx.Paragraph({
-            text: chartInfo.title,
-            heading: window.docx.HeadingLevel.HEADING_3,
-            spacing: { before: 240, after: 120 }
-          })
-        );
-
-        // Add chart image
-        children.push(
-          new window.docx.Paragraph({
-            children: [
-              new window.docx.ImageRun({
-                data: imageBuffer,
-                transformation: {
-                  width: 500,
-                  height: 250
-                }
-              })
-            ],
-            alignment: window.docx.AlignmentType.CENTER,
-            spacing: { after: 160 }
-          })
-        );
-        
-        chartsAdded++;
-        console.log(`${chartInfo.title} chart added successfully`);
-      } else {
-        console.log(`${chartInfo.title} canvas not found or not ready`);
+      } catch (imageError) {
+        console.warn(`Failed to add ${chartInfo.title} chart:`, imageError);
       }
-    } catch (imageError) {
-      console.warn(`Failed to add ${chartInfo.title} chart:`, imageError);
-      // Continue with next chart - don't fail the entire export
     }
-  }
 
-  if (chartsAdded === 0) {
-    console.log('No charts were found to add to the document');
-  }
+    // Footer with disclaimer
+    if (chartsAdded > 0 || results.variance_analysis?.content || trendContent) {
+      children.push(
+        new window.docx.Paragraph({
+          text: '',
+          spacing: { before: 720 } // Large space before footer
+        }),
+        new window.docx.Paragraph({
+          text: 'Disclaimer',
+          heading: window.docx.HeadingLevel.HEADING_3,
+          spacing: { after: 120 }
+        }),
+        new window.docx.Paragraph({
+          text: 'This analysis is generated by BlueNova Bank\'s AI-powered Variance Assistant. The insights provided are based on uploaded documents and selected economic indicators. This report is intended for internal credit analysis purposes and should be reviewed in conjunction with other risk assessment tools and professional judgment.',
+          spacing: { after: 200, line: 300 },
+          alignment: window.docx.AlignmentType.JUSTIFIED,
+          run: {
+            size: 20, // Smaller font for disclaimer
+            color: '6B7280' // Gray color
+          }
+        })
+      );
+    }
 
-    // Create document with correct v7 API
+    // Create professional document with proper styling
     const doc = new window.docx.Document({
       sections: [{
-        properties: {},
+        properties: {
+          page: {
+            margin: {
+              top: 1440,    // 1 inch margins
+              right: 1440,
+              bottom: 1440,
+              left: 1440
+            }
+          }
+        },
+        headers: {
+          default: new window.docx.Header({
+            children: [
+              new window.docx.Paragraph({
+                text: 'BlueNova Bank - Confidential',
+                alignment: window.docx.AlignmentType.RIGHT,
+                run: {
+                  size: 18,
+                  color: '9CA3AF'
+                }
+              })
+            ]
+          })
+        },
+        footers: {
+          default: new window.docx.Footer({
+            children: [
+              new window.docx.Paragraph({
+                text: `Generated on ${formattedDate} | Page `,
+                alignment: window.docx.AlignmentType.CENTER,
+                run: {
+                  size: 18,
+                  color: '9CA3AF'
+                },
+                children: [
+                  new window.docx.TextRun({
+                    text: `Generated on ${formattedDate} | Page `,
+                    size: 18,
+                    color: '9CA3AF'
+                  }),
+                  new window.docx.SimpleField({
+                    instruction: 'PAGE \\* MERGEFORMAT'
+                  })
+                ]
+              })
+            ]
+          })
+        },
         children: children
-      }]
+      }],
+      styles: {
+        paragraphStyles: [
+          {
+            id: 'Normal',
+            name: 'Normal',
+            basedOn: 'Normal',
+            run: {
+              font: 'Calibri',
+              size: 22
+            },
+            paragraph: {
+              spacing: {
+                line: 360,
+                lineRule: window.docx.LineRuleType.AUTO
+              }
+            }
+          }
+        ]
+      }
     });
 
-    console.log('Document created, generating blob...');
+    console.log('Professional document created, generating blob...');
 
-    // Generate and download
+    // Generate and download with professional filename
     const buffer = await window.docx.Packer.toBlob(doc);
     
-    // Create download link
     const url = URL.createObjectURL(buffer);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `variance-analysis-report-${new Date().toISOString().split('T')[0]}.docx`;
     
-    // Trigger download
+    // Professional filename with timestamp
+    const timestamp = currentDate.toISOString().slice(0, 10);
+    const segment = window.toolState?.segment?.toLowerCase() || 'analysis';
+    link.download = `BlueNova-Variance-Analysis-${segment}-${timestamp}.docx`;
+    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     
-    // Clean up
     URL.revokeObjectURL(url);
     
-    console.log('DOCX download completed successfully');
+    console.log('Professional DOCX download completed successfully');
     
   } catch (error) {
     console.error('DOCX Generation Error:', error);
