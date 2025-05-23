@@ -7,6 +7,178 @@
  * Main JavaScript file for the SPA
  */
 
+/**
+ * Fixed DOCX Generation Function
+ * - Correct docx@7 API usage
+ * - Proper error handling
+ * - Global scope accessibility
+ */
+window.downloadDocxAnalysisResult = async function() {
+  console.log('Starting DOCX generation...');
+  
+  try {
+    // Check if docx library is loaded
+    if (typeof window.docx === 'undefined') {
+      console.error('DOCX library not loaded');
+      alert('Document generation library not ready. Please refresh the page and try again.');
+      return;
+    }
+
+    // Check if analysis results exist
+    const results = window.toolState?.analysisResults;
+    if (!results) {
+      console.error('No analysis results available');
+      alert('No analysis results available to export.');
+      return;
+    }
+
+    console.log('Analysis results found:', results);
+
+    // Helper function to create paragraphs from text
+    function createParagraphsFromText(text) {
+      if (!text) return [];
+      
+      return text
+        .split(/\r?\n/)
+        .filter(line => line.trim() !== '')
+        .map(line => new window.docx.Paragraph({
+          text: line,
+          spacing: { after: 120 }
+        }));
+    }
+
+    // Create document content array
+    const children = [];
+
+    // Title
+    children.push(
+      new window.docx.Paragraph({
+        text: 'BlueNova Bank – Variance Analysis Report',
+        heading: window.docx.HeadingLevel.HEADING_1,
+        spacing: { after: 400 }
+      })
+    );
+
+    // Metadata
+    children.push(
+      new window.docx.Paragraph({
+        text: `Segment: ${window.toolState?.segment || 'Not selected'}`,
+        spacing: { after: 120 }
+      }),
+      new window.docx.Paragraph({
+        text: `KPIs: ${window.toolState?.kpis ? Array.from(window.toolState.kpis).join(', ') : 'None selected'}`,
+        spacing: { after: 120 }
+      }),
+      new window.docx.Paragraph({
+        text: `Date: ${new Date().toLocaleDateString()}`,
+        spacing: { after: 240 }
+      })
+    );
+
+    // Variance Analysis Section
+    if (results.variance_analysis?.content) {
+      children.push(
+        new window.docx.Paragraph({
+          text: 'Variance Analysis',
+          heading: window.docx.HeadingLevel.HEADING_2,
+          spacing: { before: 240, after: 120 }
+        })
+      );
+      
+      const varianceParagraphs = createParagraphsFromText(results.variance_analysis.content);
+      children.push(...varianceParagraphs);
+    }
+
+    // Trend Analysis Section
+    const trendContent = results.trend_analysis?.summary || results.trend_analysis?.content;
+    if (trendContent) {
+      children.push(
+        new window.docx.Paragraph({
+          text: 'Trend Analysis',
+          heading: window.docx.HeadingLevel.HEADING_2,
+          spacing: { before: 240, after: 120 }
+        })
+      );
+      
+      const trendParagraphs = createParagraphsFromText(trendContent);
+      children.push(...trendParagraphs);
+    }
+
+    // Try to add chart image
+    try {
+      const canvas = document.getElementById('ifo-trend-chart') || document.getElementById('pmi-trend-chart');
+      if (canvas && typeof canvas.toDataURL === 'function') {
+        console.log('Adding chart to document...');
+        
+        const dataUrl = canvas.toDataURL('image/png', 0.8);
+        const response = await fetch(dataUrl);
+        const imageBlob = await response.blob();
+        const imageBuffer = await imageBlob.arrayBuffer();
+
+        children.push(
+          new window.docx.Paragraph({
+            text: '',
+            spacing: { before: 240 }
+          }),
+          new window.docx.Paragraph({
+            children: [
+              new window.docx.ImageRun({
+                data: imageBuffer,
+                transformation: {
+                  width: 500,
+                  height: 250
+                }
+              })
+            ],
+            alignment: window.docx.AlignmentType.CENTER
+          })
+        );
+        
+        console.log('Chart added successfully');
+      } else {
+        console.log('No chart canvas found or canvas.toDataURL not available');
+      }
+    } catch (imageError) {
+      console.warn('Failed to add chart image:', imageError);
+      // Continue without image - don't fail the entire export
+    }
+
+    // Create document with correct v7 API
+    const doc = new window.docx.Document({
+      sections: [{
+        properties: {},
+        children: children
+      }]
+    });
+
+    console.log('Document created, generating blob...');
+
+    // Generate and download
+    const buffer = await window.docx.Packer.toBlob(doc);
+    
+    // Create download link
+    const url = URL.createObjectURL(buffer);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `variance-analysis-report-${new Date().toISOString().split('T')[0]}.docx`;
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up
+    URL.revokeObjectURL(url);
+    
+    console.log('DOCX download completed successfully');
+    
+  } catch (error) {
+    console.error('DOCX Generation Error:', error);
+    console.error('Error stack:', error.stack);
+    alert(`Failed to generate document: ${error.message}`);
+  }
+};
+
 // Global state and functions - Define these first
 window.toolState = {
   currentStep: 0,
@@ -523,13 +695,27 @@ function initToolFunctionality() {
     });
     
     // Download result button
-    const downloadBtn = document.getElementById('downloadResultBtn');
+  const downloadBtn = document.getElementById('downloadResultBtn');
     if (downloadBtn) {
-      downloadBtn.addEventListener('click', function() {
-      downloadDocxAnalysisResult();
-    });
+      downloadBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('Download button clicked');
+        
+        // Ensure function exists before calling
+        if (typeof window.downloadDocxAnalysisResult === 'function') {
+          window.downloadDocxAnalysisResult();
+        } else {
+          console.error('downloadDocxAnalysisResult function not found');
+          alert('Download function not available. Please refresh the page.');
+        }
+      });
+      
+      console.log('Download button event listener attached');
+    } else {
+      console.error('Download button not found');
     }
   }
+
   
   /**
    * Submit data to backend for analysis
@@ -1142,85 +1328,7 @@ ${results.trend_analysis?.summary || results.trend_analysis?.content || ''}
  * Download analysis results as DOCX
  * Fully corrected and safe implementation
  */
-async function downloadDocxAnalysisResult() {
-  try {
-    if (typeof window.docx === 'undefined') {
-      alert('Document generation failed: Required library not loaded. Please refresh the page and try again.');
-      return;
-    }
 
-    const results = window.toolState.analysisResults;
-    if (!results) return;
-
-    // Helper to safely convert multiline text to paragraphs
-    function createParagraphsFromText(text) {
-      return text
-        .split(/\r?\n/)
-        .filter(line => line.trim() !== '')
-        .map(line => new window.docx.Paragraph(line));
-    }
-
-    // Proper document construction for docx@7+
-    const doc = new window.docx.Document();
-    const children = [];
-    doc.addSection({ children });
-
-    children.push(
-      new window.docx.Paragraph({
-        text: 'BlueNova Bank – Variance Analysis Report',
-        heading: window.docx.HeadingLevel.HEADING_1,
-        spacing: { after: 300 }
-      }),
-      new window.docx.Paragraph(`Segment: ${window.toolState.segment || 'Not selected'}`),
-      new window.docx.Paragraph(`KPIs: ${Array.from(window.toolState.kpis).join(', ') || 'None selected'}`),
-      new window.docx.Paragraph(`Date: ${new Date().toLocaleDateString()}`),
-      new window.docx.Paragraph({ text: '', spacing: { after: 200 } })
-    );
-
-    if (results.variance_analysis?.content) {
-      children.push(
-        new window.docx.Paragraph({ text: 'Variance Analysis', heading: window.docx.HeadingLevel.HEADING_2 }),
-        ...createParagraphsFromText(results.variance_analysis.content)
-      );
-    }
-
-    if (results.trend_analysis?.summary || results.trend_analysis?.content) {
-      children.push(
-        new window.docx.Paragraph({ text: 'Trend Analysis', heading: window.docx.HeadingLevel.HEADING_2 }),
-        ...createParagraphsFromText(results.trend_analysis.summary || results.trend_analysis.content)
-      );
-    }
-
-    const canvas = document.getElementById('ifo-trend-chart') || document.getElementById('pmi-trend-chart');
-    if (canvas && canvas.toDataURL) {
-      const dataUrl = canvas.toDataURL('image/png');
-      const imageBlob = await fetch(dataUrl).then(res => res.blob());
-      const imageBuffer = await imageBlob.arrayBuffer();
-
-      children.push(
-        new window.docx.Paragraph({ text: '', spacing: { before: 200 } }),
-        new window.docx.Paragraph({
-          children: [
-            new window.docx.ImageRun({
-              data: imageBuffer,
-              transformation: { width: 600, height: 300 }
-            })
-          ]
-        })
-      );
-    }
-
-    const docxBlob = await window.docx.Packer.toBlob(doc);
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(docxBlob);
-    a.download = 'variance-analysis-report.docx';
-    a.click();
-    URL.revokeObjectURL(a.href);
-  } catch (error) {
-    console.error('Error generating document:', error);
-    alert('Error generating document. Please try again.');
-  }
-}
 
   // Add CSS styles for analysis results
   addAnalysisStyles();

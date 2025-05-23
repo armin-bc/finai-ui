@@ -402,6 +402,15 @@
   </footer>
   <!-- Replace the current docx.js script tag with this more robust version -->
   
+  <script>
+  // Debug script loading
+  window.addEventListener('load', function() {
+    console.log('Page loaded');
+    console.log('DOCX available:', typeof window.docx !== 'undefined');
+    console.log('Download function available:', typeof window.downloadDocxAnalysisResult === 'function');
+  });
+  </script>
+
   <!-- Fix script for the Next button issue -->
   <script>
     // Global navigation function for tool steps
@@ -496,7 +505,7 @@
   </script>
 
   <!-- Load regular script -->
-  <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.umd.js"></script>
   <script src="script.js"></script>
   <script src="api-integration.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
