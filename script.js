@@ -70,14 +70,14 @@ window.downloadDocxAnalysisResult = async function() {
 
     // Document Header with Logo Space
     children.push(
-      // Title with better styling
+      // Title with better styling - more prominent
       new window.docx.Paragraph({
         text: 'BlueNova Bank',
         spacing: { after: 120 },
         alignment: window.docx.AlignmentType.CENTER,
         run: {
           font: 'Calibri',
-          size: 32,
+          size: 36, // Increased from 32
           bold: true,
           color: '2563EB' // Blue color
         }
@@ -88,7 +88,8 @@ window.downloadDocxAnalysisResult = async function() {
         alignment: window.docx.AlignmentType.CENTER,
         run: {
           font: 'Calibri',
-          size: 24,
+          size: 28, // Increased from 24
+          bold: true, // Made bold
           color: '374151' // Dark gray
         }
       })
@@ -113,48 +114,55 @@ window.downloadDocxAnalysisResult = async function() {
           new window.docx.TableRow({
             children: [
               new window.docx.TableCell({
-                children: [new window.docx.Paragraph({ text: 'Business Segment', run: { bold: true } })],
-                shading: { fill: 'F3F4F6' }
+                children: [new window.docx.Paragraph({ text: 'Business Segment', run: { bold: true, size: 20 } })],
+                shading: { fill: 'F3F4F6' },
+                width: { size: 35, type: window.docx.WidthType.PERCENTAGE }
               }),
               new window.docx.TableCell({
-                children: [new window.docx.Paragraph({ text: window.toolState?.segment || 'Not selected' })]
+                children: [new window.docx.Paragraph({ text: window.toolState?.segment || 'Not selected', run: { size: 20 } })],
+                width: { size: 65, type: window.docx.WidthType.PERCENTAGE }
               })
             ]
           }),
           new window.docx.TableRow({
             children: [
               new window.docx.TableCell({
-                children: [new window.docx.Paragraph({ text: 'Key Performance Indicators', run: { bold: true } })],
-                shading: { fill: 'F3F4F6' }
+                children: [new window.docx.Paragraph({ text: 'Key Performance Indicators', run: { bold: true, size: 20 } })],
+                shading: { fill: 'F3F4F6' },
+                width: { size: 35, type: window.docx.WidthType.PERCENTAGE }
               }),
               new window.docx.TableCell({
                 children: [new window.docx.Paragraph({ 
-                  text: window.toolState?.kpis ? Array.from(window.toolState.kpis).join(', ') : 'None selected' 
-                })]
+                  text: window.toolState?.kpis ? Array.from(window.toolState.kpis).join(', ') : 'None selected',
+                  run: { size: 20 }
+                })],
+                width: { size: 65, type: window.docx.WidthType.PERCENTAGE }
               })
             ]
           }),
           new window.docx.TableRow({
             children: [
               new window.docx.TableCell({
-                children: [new window.docx.Paragraph({ text: 'Analysis Date', run: { bold: true } })],
-                shading: { fill: 'F3F4F6' }
+                children: [new window.docx.Paragraph({ text: 'Analysis Date', run: { bold: true, size: 20 } })],
+                shading: { fill: 'F3F4F6' },
+                width: { size: 35, type: window.docx.WidthType.PERCENTAGE }
               }),
               new window.docx.TableCell({
-                children: [new window.docx.Paragraph({ text: formattedDate })]
+                children: [new window.docx.Paragraph({ text: formattedDate, run: { size: 20 } })],
+                width: { size: 65, type: window.docx.WidthType.PERCENTAGE }
               })
             ]
           })
         ],
         width: {
-          size: 100,
+          size: 75,
           type: window.docx.WidthType.PERCENTAGE
         },
         margins: {
-          top: 200,
-          bottom: 200,
-          left: 200,
-          right: 200
+          top: 100,
+          bottom: 100,
+          left: 150,
+          right: 150
         }
       }),
       new window.docx.Paragraph({ text: '', spacing: { after: 400 } }) // Space after table
@@ -225,21 +233,21 @@ window.downloadDocxAnalysisResult = async function() {
             })
           );
 
-          // Generate high-quality chart image
-          const dataUrl = canvas.toDataURL('image/png', 1.0); // Higher quality
+          // Generate high-quality chart image with better sizing
+          const dataUrl = canvas.toDataURL('image/png', 0.9); // Good quality but not max
           const response = await fetch(dataUrl);
           const imageBlob = await response.blob();
           const imageBuffer = await imageBlob.arrayBuffer();
 
-          // Add chart image with professional sizing
+          // Add chart image with optimal sizing for clarity
           children.push(
             new window.docx.Paragraph({
               children: [
                 new window.docx.ImageRun({
                   data: imageBuffer,
                   transformation: {
-                    width: 540, // Larger, more professional size
-                    height: 320
+                    width: 432, // Smaller size for better pixel density (6 inches)
+                    height: 259 // Maintain aspect ratio (3.6 inches)
                   }
                 })
               ],
@@ -258,26 +266,28 @@ window.downloadDocxAnalysisResult = async function() {
       }
     }
 
-    // Footer with disclaimer
+    // Footer with disclaimer - Fixed spacing
     if (chartsAdded > 0 || results.variance_analysis?.content || trendContent) {
       children.push(
         new window.docx.Paragraph({
           text: '',
-          spacing: { before: 720 } // Large space before footer
+          spacing: { before: 480 } // Reduced space before disclaimer
         }),
         new window.docx.Paragraph({
-          text: 'Disclaimer',
-          heading: window.docx.HeadingLevel.HEADING_3,
-          spacing: { after: 120 }
-        }),
-        new window.docx.Paragraph({
-          text: 'This analysis is generated by BlueNova Bank\'s AI-powered Variance Assistant. The insights provided are based on uploaded documents and selected economic indicators. This report is intended for internal credit analysis purposes and should be reviewed in conjunction with other risk assessment tools and professional judgment.',
+          children: [
+            new window.docx.TextRun({
+              text: 'Disclaimer: ',
+              bold: true,
+              size: 22
+            }),
+            new window.docx.TextRun({
+              text: 'This analysis is generated by BlueNova Bank\'s AI-powered Variance Assistant. The insights provided are based on uploaded documents and selected economic indicators. This report is intended for internal credit analysis purposes and should be reviewed in conjunction with other risk assessment tools and professional judgment.',
+              size: 20,
+              color: '6B7280'
+            })
+          ],
           spacing: { after: 200, line: 300 },
-          alignment: window.docx.AlignmentType.JUSTIFIED,
-          run: {
-            size: 20, // Smaller font for disclaimer
-            color: '6B7280' // Gray color
-          }
+          alignment: window.docx.AlignmentType.JUSTIFIED
         })
       );
     }
@@ -302,37 +312,14 @@ window.downloadDocxAnalysisResult = async function() {
                 text: 'BlueNova Bank - Confidential',
                 alignment: window.docx.AlignmentType.RIGHT,
                 run: {
-                  size: 18,
+                  size: 16,
                   color: '9CA3AF'
                 }
               })
             ]
           })
         },
-        footers: {
-          default: new window.docx.Footer({
-            children: [
-              new window.docx.Paragraph({
-                text: `Generated on ${formattedDate} | Page `,
-                alignment: window.docx.AlignmentType.CENTER,
-                run: {
-                  size: 18,
-                  color: '9CA3AF'
-                },
-                children: [
-                  new window.docx.TextRun({
-                    text: `Generated on ${formattedDate} | Page `,
-                    size: 18,
-                    color: '9CA3AF'
-                  }),
-                  new window.docx.SimpleField({
-                    instruction: 'PAGE \\* MERGEFORMAT'
-                  })
-                ]
-              })
-            ]
-          })
-        },
+
         children: children
       }],
       styles: {
