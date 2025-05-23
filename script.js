@@ -1160,23 +1160,22 @@ async function downloadDocxAnalysisResult() {
         .map(line => new window.docx.Paragraph(line));
     }
 
-    const doc = new window.docx.Document({
-      sections: [{
-        children: [
-          new window.docx.Paragraph({
-            text: 'BlueNova Bank – Variance Analysis Report',
-            heading: window.docx.HeadingLevel.HEADING_1,
-            spacing: { after: 300 }
-          }),
-          new window.docx.Paragraph(`Segment: ${window.toolState.segment || 'Not selected'}`),
-          new window.docx.Paragraph(`KPIs: ${Array.from(window.toolState.kpis).join(', ') || 'None selected'}`),
-          new window.docx.Paragraph(`Date: ${new Date().toLocaleDateString()}`),
-          new window.docx.Paragraph({ text: '', spacing: { after: 200 } }),
-        ]
-      }]
-    });
+    // Proper document construction for docx@7+
+    const doc = new window.docx.Document();
+    const children = [];
+    doc.addSection({ children });
 
-    const children = doc.sections[0].children;
+    children.push(
+      new window.docx.Paragraph({
+        text: 'BlueNova Bank – Variance Analysis Report',
+        heading: window.docx.HeadingLevel.HEADING_1,
+        spacing: { after: 300 }
+      }),
+      new window.docx.Paragraph(`Segment: ${window.toolState.segment || 'Not selected'}`),
+      new window.docx.Paragraph(`KPIs: ${Array.from(window.toolState.kpis).join(', ') || 'None selected'}`),
+      new window.docx.Paragraph(`Date: ${new Date().toLocaleDateString()}`),
+      new window.docx.Paragraph({ text: '', spacing: { after: 200 } })
+    );
 
     if (results.variance_analysis?.content) {
       children.push(
