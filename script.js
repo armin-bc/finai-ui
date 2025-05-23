@@ -1,5 +1,5 @@
 /**
- * Version 1.2
+ * Version 1.1
  */
 
 /**
@@ -1140,20 +1140,26 @@ ${results.trend_analysis?.summary || results.trend_analysis?.content || ''}
   
 /**
  * Download analysis results as DOCX
- * Completely rewritten implementation
+ * Fully corrected and safe implementation
  */
 async function downloadDocxAnalysisResult() {
   try {
-    // Check if docx is available
     if (typeof window.docx === 'undefined') {
       alert('Document generation failed: Required library not loaded. Please refresh the page and try again.');
       return;
     }
-    
+
     const results = window.toolState.analysisResults;
     if (!results) return;
 
-    // Create document
+    // Helper to safely convert multiline text to paragraphs
+    function createParagraphsFromText(text) {
+      return text
+        .split(/\r?\n/)
+        .filter(line => line.trim() !== '')
+        .map(line => new window.docx.Paragraph(line));
+    }
+
     const doc = new window.docx.Document({
       sections: [{
         children: [
@@ -1172,34 +1178,32 @@ async function downloadDocxAnalysisResult() {
 
     const children = doc.sections[0].children;
 
-    // Add analysis sections
     if (results.variance_analysis?.content) {
       children.push(
         new window.docx.Paragraph({ text: 'Variance Analysis', heading: window.docx.HeadingLevel.HEADING_2 }),
-        new window.docx.Paragraph(results.variance_analysis.content)
+        ...createParagraphsFromText(results.variance_analysis.content)
       );
     }
 
     if (results.trend_analysis?.summary || results.trend_analysis?.content) {
       children.push(
         new window.docx.Paragraph({ text: 'Trend Analysis', heading: window.docx.HeadingLevel.HEADING_2 }),
-        new window.docx.Paragraph(results.trend_analysis.summary || results.trend_analysis.content)
+        ...createParagraphsFromText(results.trend_analysis.summary || results.trend_analysis.content)
       );
     }
 
-    // Add chart if available
-    const canvas = document.getElementById('trend-chart');
-    if (canvas) {
+    const canvas = document.getElementById('ifo-trend-chart') || document.getElementById('pmi-trend-chart');
+    if (canvas && canvas.toDataURL) {
       const dataUrl = canvas.toDataURL('image/png');
-      const blob = await fetch(dataUrl).then(res => res.blob());
-      const buffer = await blob.arrayBuffer();
+      const imageBlob = await fetch(dataUrl).then(res => res.blob());
+      const imageBuffer = await imageBlob.arrayBuffer();
 
       children.push(
         new window.docx.Paragraph({ text: '', spacing: { before: 200 } }),
         new window.docx.Paragraph({
           children: [
             new window.docx.ImageRun({
-              data: buffer,
+              data: imageBuffer,
               transformation: { width: 600, height: 300 }
             })
           ]
@@ -1207,10 +1211,9 @@ async function downloadDocxAnalysisResult() {
       );
     }
 
-    // Generate and download
-    const blob = await window.docx.Packer.toBlob(doc);
+    const docxBlob = await window.docx.Packer.toBlob(doc);
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
+    a.href = URL.createObjectURL(docxBlob);
     a.download = 'variance-analysis-report.docx';
     a.click();
     URL.revokeObjectURL(a.href);
